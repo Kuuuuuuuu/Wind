@@ -1,6 +1,6 @@
 # Wind 🍃
 
-Wind is a simple link shortener written in TypeScript with Express.js and MySQL2.
+Wind is a simple url shortener written in TypeScript with Express.js and MySQL2.
 
 ### Requirements :warning:
 - Node.js (LTS or latest)

@@ -4,6 +4,7 @@ import express, {Request, Response} from 'express';
 import helmet from 'helmet';
 import {createPool, RowDataPacket} from 'mysql2';
 import path from 'node:path';
+import xss from 'xss';
 
 console.clear();
 dotenv.config();
@@ -115,9 +116,10 @@ app.post('/', async (req: Request, res: Response) => {
         ];
     }
 
-    const shortUrl = `${process.env.BASE_URL}/${urlCode}`;
+    const shortUrl = xss(`${process.env.BASE_URL}/${urlCode}`);
 
     try {
+        console.log('New URL:', url);
         await connection.query('INSERT INTO urls (url, urlCode) VALUES (?, ?)', [url, urlCode]);
         res.json({success: true, shortUrl});
     } catch (error) {

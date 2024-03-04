@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "lib": ["ESNext"],
+        "target": "ES2022",
+        "module": "commonjs",
+        "sourceMap": false,
+        "resolveJsonModule": true,
+        "importHelpers": true,
+        "removeComments": true,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "preserveConstEnums": true,
+        "declaration": true
+    },
+    "include": ["**/*.ts", "**/*.js", "**/*.test.ts", "**/*.test.js"],
+    "exclude": ["node_modules"]
+}

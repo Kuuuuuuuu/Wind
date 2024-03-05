@@ -136,6 +136,10 @@ app.post('/', async (req: Request, res: Response) => {
 app.get('/:code', async (req: Request, res: Response) => {
     const {code} = req.params;
 
+    if (!code) {
+        return res.status(400).json({message: 'Code is required'});
+    }
+
     const connection = await pool.getConnection();
 
     try {

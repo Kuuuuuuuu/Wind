@@ -120,7 +120,10 @@ app.post('/', async (req: Request, res: Response) => {
 
     try {
         console.log('New URL:', url);
-        await connection.query('INSERT INTO urls (url, urlCode) VALUES (?, ?)', [url, urlCode]);
+        await connection.query('INSERT INTO urls (url, urlCode) VALUES (?, ?)', [
+            connection.escape(url),
+            urlCode,
+        ]);
         res.json({success: true, shortUrl});
     } catch (error) {
         console.error('Error inserting URL:', error);
@@ -138,7 +141,7 @@ app.get('/:code', async (req: Request, res: Response) => {
     try {
         const [rows]: [RowDataPacket[], unknown] = await connection.query(
             'SELECT * FROM urls WHERE urlCode = ?',
-            [code]
+            [connection.escape(code)]
         );
 
         if (rows.length === 0) {

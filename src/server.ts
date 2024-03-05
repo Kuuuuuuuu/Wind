@@ -4,6 +4,7 @@ import express, {Request, Response} from 'express';
 import helmet from 'helmet';
 import {createPool, RowDataPacket} from 'mysql2';
 import path from 'node:path';
+import {isURL} from 'validator';
 import xss from 'xss';
 
 console.clear();
@@ -91,8 +92,7 @@ app.post('/', async (req: Request, res: Response) => {
         return res.status(400).json({success: false, message: 'URL is required'});
     }
 
-    const regex = /^(http|https):\/\/[^ "]+$/;
-    if (!regex.test(url) || url.includes(process.env.BASE_URL)) {
+    if (!isURL(url) || url.includes(process.env.BASE_URL)) {
         return res.status(400).json({success: false, message: 'Invalid URL'});
     }
 
@@ -122,7 +122,7 @@ app.post('/', async (req: Request, res: Response) => {
         console.log('New URL:', url);
         await connection.query('INSERT INTO urls (url, urlCode) VALUES (?, ?)', [
             connection.escape(url),
-            urlCode,
+            connection.escape(urlCode),
         ]);
         res.json({success: true, shortUrl});
     } catch (error) {
@@ -148,7 +148,7 @@ app.get('/:code', async (req: Request, res: Response) => {
             return res.status(404).json({message: 'URL not found'});
         }
 
-        res.redirect(rows[0].url);
+        res.redirect(String(rows[0].url).replace(/'/g, ''));
     } catch (error) {
         console.error(error);
         res.status(500).json({message: 'Internal server error'});
@@ -158,6 +158,9 @@ app.get('/:code', async (req: Request, res: Response) => {
 });
 
 app.use((req: Request, res: Response) => {
+    if (req.path === '/robots.txt') {
+        return res.type('text/plain').send('User-agent: *\nDisallow: /');
+    }
     res.status(404).json({message: 'Not found'});
 });
 

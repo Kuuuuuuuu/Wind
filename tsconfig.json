@@ -12,6 +12,6 @@
         "preserveConstEnums": true,
         "declaration": true
     },
-    "include": ["**/*.ts", "**/*.js", "**/*.test.ts", "**/*.test.js"],
+    "include": ["src/**/*.ts"],
     "exclude": ["node_modules"]
 }

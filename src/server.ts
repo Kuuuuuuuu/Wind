@@ -1,11 +1,10 @@
-import {randomString} from './util';
+import {findUnusedUrlCode} from './util';
 import dotenv from 'dotenv';
 import express, {Request, Response} from 'express';
 import helmet from 'helmet';
 import {createPool, RowDataPacket} from 'mysql2';
 import path from 'node:path';
 import {isURL} from 'validator';
-import xss from 'xss';
 
 console.clear();
 dotenv.config();
@@ -67,21 +66,14 @@ try {
 }
 
 app.get('/', async (req: Request, res: Response) => {
-    const connection = await pool.getConnection();
-
     try {
         // count the number of rows in the urls table
-        const [rows]: [RowDataPacket[], unknown] = await connection.query(
-            'SELECT COUNT(*) as count FROM urls'
-        );
+        const [rows]: [RowDataPacket[], unknown] = await pool.query('SELECT COUNT(*) as count FROM urls');
         const count = rows[0].count;
-
         res.render('index', {count});
     } catch (error) {
         console.error('Error getting URL count:', error);
         res.status(500).json({message: 'Internal server error'});
-    } finally {
-        connection.release();
     }
 });
 
@@ -96,40 +88,14 @@ app.post('/', async (req: Request, res: Response) => {
         return res.status(400).json({success: false, message: 'Invalid URL'});
     }
 
-    // random length between 4 - 10
-    const randomLength = Math.floor(Math.random() * (10 - 4 + 1)) + 4;
-    let urlCode = randomString(randomLength);
-
-    const connection = await pool.getConnection();
-
-    // check if urlcode already exists
-    let [rows]: [RowDataPacket[], unknown] = await connection.query('SELECT * FROM urls WHERE urlCode = ?', [
-        urlCode,
-    ]);
-
-    // if urlcode exists, generate a new one until it doesn't
-    while (rows.length > 0) {
-        urlCode = randomString(6);
-        [rows] = (await connection.query('SELECT * FROM urls WHERE urlCode = ?', [urlCode])) as [
-            RowDataPacket[],
-            unknown,
-        ];
-    }
-
-    const shortUrl = xss(`${process.env.BASE_URL}/${urlCode}`);
-
     try {
+        const urlCode = await findUnusedUrlCode();
         console.log('New URL:', url);
-        await connection.query('INSERT INTO urls (url, urlCode) VALUES (?, ?)', [
-            connection.escape(url),
-            connection.escape(urlCode),
-        ]);
-        res.json({success: true, shortUrl});
+        await pool.query('INSERT INTO urls (url, urlCode) VALUES (?, ?)', [url, urlCode]);
+        res.json({success: true, shortUrl: `${process.env.BASE_URL}/${urlCode}`});
     } catch (error) {
         console.error('Error inserting URL:', error);
         res.status(500).json({success: false, message: 'Internal server error'});
-    } finally {
-        connection.release();
     }
 });
 
@@ -137,37 +103,34 @@ app.get('/:code', async (req: Request, res: Response) => {
     const {code} = req.params;
 
     if (!code) {
-        return res.status(400).json({message: 'Code is required'});
+        return res.redirect('/');
     }
 
-    const connection = await pool.getConnection();
-
     try {
-        const [rows]: [RowDataPacket[], unknown] = await connection.query(
-            'SELECT * FROM urls WHERE urlCode = ?',
-            [connection.escape(code)]
-        );
+        const [rows]: [RowDataPacket[], unknown] = await pool.query('SELECT * FROM urls WHERE urlCode = ?', [code]);
 
         if (rows.length === 0) {
             return res.status(404).json({message: 'URL not found'});
         }
 
-        res.redirect(String(rows[0].url).replace(/'/g, ''));
+        res.redirect(rows[0].url);
     } catch (error) {
         console.error(error);
         res.status(500).json({message: 'Internal server error'});
-    } finally {
-        connection.release();
     }
 });
 
 app.use((req: Request, res: Response) => {
-    if (req.path === '/robots.txt') {
-        return res.type('text/plain').send('User-agent: *\nDisallow: /');
-    }
     res.status(404).json({message: 'Not found'});
+});
+
+app.use((err: Error, req: Request, res: Response) => {
+    console.error(err);
+    res.status(500).json({message: 'Internal server error'});
 });
 
 app.listen(process.env.PORT, () => {
     console.log(`Server is running on port ${process.env.PORT}`);
 });
+
+export {pool};

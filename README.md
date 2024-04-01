@@ -3,25 +3,31 @@
 Wind is a simple url shortener written in TypeScript with Express.js and MySQL2.
 
 ### Requirements :warning:
-- Node.js (LTS or latest)
-- MySQL Database
+
+-   Node.js (LTS or latest)
+-   MySQL Database
 
 ### Setup :gear:
+
 1. **Clone the Repository**
+
     ```
     git clone https://github.com/Kuuuuuuuu/Wind.git
     ```
 
 2. **Install Dependencies**
+
     ```bash
     npm install
     ```
 
 3. **Configure Environment**
-   - Rename `.env.example` to `.env`
-   - Fill in your database information in the `.env` file
+
+    - Rename `.env.example` to `.env`
+    - Fill in your database information in the `.env` file
 
 4. **Start the Application**
+
     ```bash
     npm start
     ```

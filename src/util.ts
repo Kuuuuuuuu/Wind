@@ -1,14 +1,6 @@
 import {pool} from './server';
 import {RowDataPacket} from 'mysql2';
-
-export function randomString(length: number): string {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-        result += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return result;
-}
+import {randomBytes} from 'node:crypto';
 
 export async function findUnusedUrlCode(): Promise<string> {
     const connection = await pool.getConnection();
@@ -16,11 +8,11 @@ export async function findUnusedUrlCode(): Promise<string> {
 
     try {
         do {
-            urlCode = randomString(Math.floor(Math.random() * (10 - 4 + 1)) + 4);
-            const [rows]: [RowDataPacket[], unknown] = await connection.query('SELECT * FROM urls WHERE urlCode = ?', [
-                [urlCode],
-            ]);
-            if (rows.length === 0) {
+            urlCode = randomBytes(Math.floor(Math.random() * (4 - 2 + 1)) + 2).toString('hex');
+            const [rows]: [RowDataPacket[], unknown] = await connection.query('SELECT urlCode FROM urls');
+            const usedCodes = rows.map(r => r.urlCode);
+            // idk this might be better
+            if (!usedCodes.includes(urlCode)) {
                 return urlCode;
             }
         } while (!urlCode);

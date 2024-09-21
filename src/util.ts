@@ -4,18 +4,20 @@ import {randomBytes} from 'node:crypto';
 
 export async function findUnusedUrlCode(): Promise<string> {
     const connection = await pool.getConnection();
-    let urlCode: string;
 
     try {
+        const [usedCodes]: [RowDataPacket[], unknown] = await connection.query('SELECT urlCode FROM urls');
+        const usedCodeSet = new Set(usedCodes.map(r => r.urlCode));
+
+        let urlCode: string;
         do {
-            urlCode = randomBytes(Math.floor(Math.random() * (4 - 2 + 1)) + 2).toString('hex');
-            const [rows]: [RowDataPacket[], unknown] = await connection.query('SELECT urlCode FROM urls');
-            const usedCodes = rows.map(r => r.urlCode);
-            // idk this might be better
-            if (!usedCodes.includes(urlCode)) {
-                return urlCode;
-            }
-        } while (!urlCode);
+            const length = Math.floor(Math.random() * 7) + 6;
+            urlCode = randomBytes(Math.ceil(length / 2))
+                .toString('hex')
+                .slice(0, length);
+        } while (usedCodeSet.has(urlCode));
+
+        return urlCode;
     } finally {
         connection.release();
     }

@@ -6,7 +6,7 @@ export async function findUnusedUrlCode(): Promise<string> {
     const connection = await pool.getConnection();
 
     try {
-        const [usedCodes]: [RowDataPacket[], unknown] = await connection.query('SELECT urlCode FROM urls');
+        const usedCodes = await queryDatabase('SELECT urlCode FROM urls');
         const usedCodeSet = new Set(usedCodes.map(r => r.urlCode));
 
         let urlCode: string;
@@ -20,5 +20,15 @@ export async function findUnusedUrlCode(): Promise<string> {
         return urlCode;
     } finally {
         connection.release();
+    }
+}
+
+export async function queryDatabase(query: string, params: unknown[] = []) {
+    try {
+        const [rows]: [RowDataPacket[], unknown] = await pool.query(query, params);
+        return rows;
+    } catch (error) {
+        console.error('Database query error:', error);
+        throw new Error('Database error');
     }
 }
